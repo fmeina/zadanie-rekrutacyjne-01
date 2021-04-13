@@ -27,10 +27,8 @@ public class KontoBankowe {
 
     private long wirtualne;
 
-    @Column(name="stan_weryfikacji")
     private Long stanWeryfikacji;
 
-    @Column(name="data_weryfikacji")
     private java.sql.Timestamp dataWeryfikacji;
 
 
@@ -95,8 +93,7 @@ public class KontoBankowe {
     }
 
     public void setDataWeryfikacji(Timestamp dataWeryfikacji) {
-        long now = System.currentTimeMillis();
-        this.dataWeryfikacji = new Timestamp(now);
+        this.dataWeryfikacji = dataWeryfikacji;
     }
 
 
@@ -112,6 +109,48 @@ public class KontoBankowe {
                 ", stan='" + getStanWeryfikacji() + '\'' +
                 ", data='" + getDataWeryfikacji() + '\'' +
                 '}';
+    }
+
+    public String Wirtualne() {
+        if (getWirtualne() == 1){
+            return "TAK";
+        }
+        else {
+            return "NIE";
+        }
+    }
+
+    public String Domyslne() {
+        if (getDomyslne() == 1) {
+            return "TAK";
+        }
+        else {
+            return "NIE";
+        }
+    }
+
+    public String Aktywne() {
+        if (getAktywne() == 1) {
+            return "TAK";
+        }
+        else {
+            return "NIE";
+        }
+    }
+
+    public String Zweryfikowane() {
+        if (getStanWeryfikacji() == null){
+            return "NIEOKREŚLONY";
+        }
+        else if (getStanWeryfikacji() == 1) {
+            return "ZWERYFIKOWANE";
+        }
+        else if (getStanWeryfikacji() == 0) {
+            return "BŁĘDNE KONTO";
+        }
+        else {
+            return "-";
+        }
     }
 
 }
