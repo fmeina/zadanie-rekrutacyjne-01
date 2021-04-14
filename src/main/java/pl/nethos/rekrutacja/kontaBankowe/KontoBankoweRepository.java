@@ -1,14 +1,19 @@
 package pl.nethos.rekrutacja.kontaBankowe;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.nethos.rekrutacja.collectData.APICaller;
+import pl.nethos.rekrutacja.collectData.Example;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -34,10 +39,32 @@ public class KontoBankoweRepository {
         return kontaFirmy;
     }
 
-    public void save() {
-        KontoBankowe kontoBankowe = em.find(KontoBankowe.class, 1);
+    public void save(KontoBankowe konto) throws IOException, ParseException {
 
-        em.getTransaction().begin();
+        APICaller apiCaller = new APICaller();
 
+        Example example = apiCaller.callAPI(konto.getKontrahent().getNip(), konto.getNumer());
+        long option;
+        if (example.getResult().getAccountAssigned().equals("TAK")) {
+            option = 1;
+        }
+        else {
+            option = 0;
+        }
+
+        Timestamp timestamp = timestamp(example);
+
+        KontoBankowe kontoBankowe = em.getReference(KontoBankowe.class, konto.getId());
+
+        kontoBankowe.setStanWeryfikacji(option);
+        kontoBankowe.setDataWeryfikacji(timestamp);
+    }
+
+    private Timestamp timestamp(Example example) throws ParseException {
+        DateFormat formatter = new SimpleDateFormat("dd-MM-yy HH:mm:ss");
+
+        Date date = formatter.parse(example.getResult().getRequestDateTime());
+
+        return new Timestamp(date.getTime());
     }
 }

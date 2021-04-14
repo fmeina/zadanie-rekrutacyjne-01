@@ -3,7 +3,6 @@ package pl.nethos.rekrutacja;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Label;
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.PWA;
@@ -13,6 +12,8 @@ import pl.nethos.rekrutacja.kontaBankowe.KontoBankoweRepository;
 import pl.nethos.rekrutacja.kontrahent.Kontrahent;
 import pl.nethos.rekrutacja.kontrahent.KontrahentRepository;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,21 +51,35 @@ public class MainView extends VerticalLayout {
             Grid<KontoBankowe> kontoBankoweGrid = new Grid<>();
             List<KontoBankowe> kontaFirmy = new ArrayList<>();
             kontaFirmy.addAll(kontoBankoweRepository.findKontaFirmy(kontrahent.getId()));
-            configuerKontoBankoweGrid(kontoBankoweGrid, kontrahent.getNazwa(), kontaFirmy);
+            configuerKontoBankoweGrid(kontoBankoweGrid, kontrahent.getNazwa(), kontaFirmy, kontoBankoweRepository);
+            Label listaKont = new Label("Lista kont bankowych firmy: " + kontrahent.getNazwa());
+            add(listaKont);
             add(kontoBankoweGrid);
         });
         return nrKontButton;
     }
 
-    private Button createWeryfikacjaButton() {
+    private Button createWeryfikacjaButton(KontoBankowe kontoBankowe, KontoBankoweRepository kontoBankoweRepository) {
         Button weryfikacjaButton = new Button("Weryfikuj", buttonClickEvent -> {
-            add(new Label("Weryfikacja"));
+            try {
+                kontoBankoweRepository.save(kontoBankowe);
+            } catch (IOException | ParseException e) {
+                e.printStackTrace();
+            }
+            add(new Label("Weryfikacja..."));
+            Grid<KontoBankowe> kontoBankoweGrid = new Grid<>();
+            List<KontoBankowe> kontaFirmy = new ArrayList<>();
+            kontaFirmy.addAll(kontoBankoweRepository.findKontaFirmy(kontoBankowe.getKontrahent().getId()));
+            configuerKontoBankoweGrid(kontoBankoweGrid, kontoBankowe.getKontrahent().getNazwa(), kontaFirmy
+                    , kontoBankoweRepository);
+            add(kontoBankoweGrid);
         });
         return weryfikacjaButton;
     }
 
 
-    private void configureKontrahentGrid(Grid<Kontrahent> kontrahentGrid, List<Kontrahent> kontrahentList, KontoBankoweRepository kontoBankoweRepository) {
+    private void configureKontrahentGrid(Grid<Kontrahent> kontrahentGrid, List<Kontrahent> kontrahentList,
+                                         KontoBankoweRepository kontoBankoweRepository) {
         kontrahentGrid.setItems(kontrahentList);
         kontrahentGrid.addColumn(Kontrahent::getNazwa).setHeader("Nazwa kontrahenta");
         kontrahentGrid.addColumn(Kontrahent::getNip).setHeader("Numer NIP kontrahenta");
@@ -74,16 +89,16 @@ public class MainView extends VerticalLayout {
     }
 
     private void configuerKontoBankoweGrid(Grid<KontoBankowe> kontoBankoweGrid, String nazwaKontrahenta,
-                                           List<KontoBankowe> kontaFirmy) {
-        Label listaKont = new Label("Lista kont bankowych firmy: " + nazwaKontrahenta);
-        add(listaKont);
+                                           List<KontoBankowe> kontaFirmy,
+                                           KontoBankoweRepository kontoBankoweRepository) {
         kontoBankoweGrid.setItems(kontaFirmy);
         kontoBankoweGrid.addColumn(KontoBankowe::getNumer).setHeader("Numer konta bankowego");
         kontoBankoweGrid.addColumn(KontoBankowe::Aktywne).setHeader("Aktywność");
         kontoBankoweGrid.addColumn(KontoBankowe::Domyslne).setHeader("Domyślność");
         kontoBankoweGrid.addColumn(KontoBankowe::Wirtualne).setHeader("Wirtualność");
         kontoBankoweGrid.addColumn(KontoBankowe::Zweryfikowane).setHeader("Zweryfikowane");
-        kontoBankoweGrid.addComponentColumn(kontoBankowe -> createWeryfikacjaButton());
+        kontoBankoweGrid.addComponentColumn(kontoBankowe -> createWeryfikacjaButton(kontoBankowe,
+                kontoBankoweRepository));
         kontoBankoweGrid.addColumn(KontoBankowe::getDataWeryfikacji).setHeader("Data Weryfikacji");
         kontoBankoweGrid.getColumns().forEach(col -> col.setAutoWidth(true));
         kontoBankoweGrid.setHeightByRows(true);
